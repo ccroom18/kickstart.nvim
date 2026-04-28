@@ -140,6 +140,7 @@ require('lazy').setup({
     ---@type Gitsigns.Config
     ---@diagnostic disable-next-line: missing-fields
     opts = {
+      current_line_blame = true,
       signs = {
         add = { text = '+' }, ---@diagnostic disable-line: missing-fields
         change = { text = '~' }, ---@diagnostic disable-line: missing-fields
@@ -225,10 +226,23 @@ require('lazy').setup({
       --
       -- [[ Configure Telescope ]]
       -- See `:help telescope` and `:help telescope.setup()`
+      local actions = require("telescope.actions")
+      local trouble = require("trouble.sources.telescope")
+      
       require('telescope').setup {
         extensions = {
           ['ui-select'] = { require('telescope.themes').get_dropdown() },
         },
+          defaults = {
+            mappings = {
+              i = {
+                ["<C-t>"] = trouble.open,
+              },
+              n = {
+                ["<C-t>"] = trouble.open,
+              },
+            },
+          },
       }
 
       -- Enable Telescope extensions if they are installed
@@ -241,8 +255,8 @@ require('lazy').setup({
       vim.keymap.set('n', '<leader>sk', builtin.keymaps, { desc = '[S]earch [K]eymaps' })
       vim.keymap.set('n', '<leader>f', builtin.find_files, { desc = '[S]earch [F]iles' })
       vim.keymap.set('n', '<leader>ss', builtin.builtin, { desc = '[S]earch [S]elect Telescope' })
-      vim.keymap.set({ 'n', 'v' }, '<leader>r', builtin.grep_string, { desc = '[S]earch current [W]ord' })
-      vim.keymap.set('n', '<leader>sg', builtin.live_grep, { desc = '[S]earch by [G]rep' })
+      vim.keymap.set({ 'n', 'v' }, '<leader>sw', builtin.grep_string, { desc = '[S]earch current [W]ord' })
+      vim.keymap.set('n', '<leader>r', '<cmd>Telescope live_grep<CR>', { desc = '[S]earch by [G]rep' })
       vim.keymap.set('n', '<leader>sd', builtin.diagnostics, { desc = '[S]earch [D]iagnostics' })
       vim.keymap.set('n', '<leader>sr', builtin.resume, { desc = '[S]earch [R]esume' })
       vim.keymap.set('n', '<leader>s.', builtin.oldfiles, { desc = '[S]earch Recent Files ("." for repeat)' })
@@ -283,6 +297,49 @@ require('lazy').setup({
 
       vim.keymap.set('n', '<leader>sn', function() builtin.find_files { cwd = vim.fn.stdpath 'config' } end, { desc = '[S]earch [N]eovim files' })
     end,
+  },
+  
+  {
+    "folke/trouble.nvim",
+    opts = {
+      modes = {
+        telescope = {
+          title = false,
+          groups = {
+            { "dirname", format = "{dirname} {count}" },
+            { "filename", format = "{file_icon} {basename} {count}" },
+          },
+          sort = { "dirname", "filename", "pos" },
+        },
+
+        telescope_files = {
+          title = false,
+        },
+      },
+    },
+    cmd = "Trouble",
+    keys = {
+      {
+        "<leader>xx",
+        "<cmd>Trouble diagnostics toggle<cr>",
+        desc = "Diagnostics (Trouble)",
+      },
+      {
+        "<leader>xX",
+        "<cmd>Trouble diagnostics toggle filter.buf=0<cr>",
+        desc = "Buffer Diagnostics (Trouble)",
+      },
+      {
+        "<leader>xL",
+        "<cmd>Trouble loclist toggle<cr>",
+        desc = "Location List (Trouble)",
+      },
+      {
+        "<leader>xQ",
+        "<cmd>Trouble qflist toggle<cr>",
+        desc = "Quickfix List (Trouble)",
+      },
+    },
   },
 
   {
@@ -444,7 +501,7 @@ require('lazy').setup({
     cmd = { 'ConformInfo' },
     keys = {
       {
-        '<leader>f',
+        '<leader>c',
         function() require('conform').format { async = true } end,
         mode = '',
         desc = '[F]ormat buffer',
@@ -522,7 +579,7 @@ require('lazy').setup({
         -- <c-e>: Hide menu
         -- <c-k>: Toggle signature help
         --
-        preset = 'default',
+        preset = 'super-tab',
       },
       appearance = {
         nerd_font_variant = 'mono',

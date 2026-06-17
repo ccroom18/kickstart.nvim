@@ -1,5 +1,11 @@
-vim.env.PATH = "/home/ccroom/.cargo/bin:" .. vim.env.PATH
-vim.keymap.set("n", "-", "<CMD>Oil<CR>", { desc = "Open parent directory" })
+vim.env.PATH = '/home/ccroom/.cargo/bin:' .. vim.env.PATH
+vim.opt.termguicolors = true
+vim.g.mapleader = " "
+
+vim.keymap.set('n', '-', '<CMD>Oil<CR>', { desc = 'Open parent directory' })
+vim.keymap.set({ "n", "v" }, "<leader>d", '"_d')
+vim.keymap.set({ "n", "v" }, "<leader>y", '"+y')
+vim.keymap.set("n", "<leader>Y", '"+Y')
 
 -- Set <space> as the leader key
 vim.g.mapleader = ' '
@@ -7,7 +13,6 @@ vim.g.maplocalleader = ' '
 
 -- Set to true if you have a Nerd Font installed and selected in the terminal
 vim.g.have_nerd_font = false
-
 
 -- Make line numbers default
 vim.o.number = true
@@ -148,32 +153,108 @@ require('lazy').setup({
         topdelete = { text = '‾' }, ---@diagnostic disable-line: missing-fields
         changedelete = { text = '~' }, ---@diagnostic disable-line: missing-fields
       },
+      on_attach = function(bufnr)
+        local gitsigns = require 'gitsigns'
+
+        local function map(mode, lhs, rhs, opts)
+          opts = opts or {}
+          opts.buffer = bufnr
+          vim.keymap.set(mode, lhs, rhs, opts)
+        end
+
+        -- Navigation
+        map('n', ']c', function()
+          if vim.wo.diff then
+            vim.cmd.normal { ']c', bang = true }
+          else
+            gitsigns.nav_hunk 'next'
+          end
+        end)
+
+        map('n', '[c', function()
+          if vim.wo.diff then
+            vim.cmd.normal { '[c', bang = true }
+          else
+            gitsigns.nav_hunk 'prev'
+          end
+        end)
+
+        -- Actions
+        map('n', '<leader>hs', gitsigns.stage_hunk)
+        map('n', '<leader>hr', gitsigns.reset_hunk)
+
+        map('v', '<leader>hs', function() gitsigns.stage_hunk { vim.fn.line '.', vim.fn.line 'v' } end)
+
+        map('v', '<leader>hr', function() gitsigns.reset_hunk { vim.fn.line '.', vim.fn.line 'v' } end)
+
+        map('n', '<leader>hS', gitsigns.stage_buffer)
+        map('n', '<leader>hR', gitsigns.reset_buffer)
+        map('n', '<leader>hp', gitsigns.preview_hunk)
+        map('n', '<leader>hi', gitsigns.preview_hunk_inline)
+
+        map('n', '<leader>hb', function() gitsigns.blame_line { full = true } end)
+
+        map('n', '<leader>hd', gitsigns.diffthis)
+
+        map('n', '<leader>hD', function() gitsigns.diffthis '~' end)
+
+        map('n', '<leader>hQ', function() gitsigns.setqflist 'all' end)
+
+        map('n', '<leader>hq', gitsigns.setqflist)
+
+        -- Toggles
+        map('n', '<leader>tb', gitsigns.toggle_current_line_blame)
+        map('n', '<leader>tw', gitsigns.toggle_word_diff)
+
+        -- Text object
+        map({ 'o', 'x' }, 'ih', gitsigns.select_hunk)
+      end,
     },
   },
 
   {
-    "NeogitOrg/neogit",
+    'NeogitOrg/neogit',
     lazy = true,
     dependencies = {
-      "nvim-lua/plenary.nvim",         -- required
-  
+      'nvim-lua/plenary.nvim', -- required
+
       -- Only one of these is needed.
       --"sindrets/diffview.nvim",        -- optional
-      "esmuellert/codediff.nvim",      -- optional
-  
+      'esmuellert/codediff.nvim', -- optional
+
       -- For a custom log pager
-      "m00qek/baleia.nvim",            -- optional
-  
+      'm00qek/baleia.nvim', -- optional
+
       -- Only one of these is needed.
-      "nvim-telescope/telescope.nvim", -- optional
+      'nvim-telescope/telescope.nvim', -- optional
       --"ibhagwan/fzf-lua",              -- optional
       --"nvim-mini/mini.pick",           -- optional
       --"folke/snacks.nvim",             -- optional
     },
-    cmd = "Neogit",
+    cmd = 'Neogit',
     keys = {
-      { "<leader>gg", "<cmd>Neogit<cr>", desc = "Show Neogit UI" }
-    }
+      { '<leader>g', '<cmd>Neogit<cr>', desc = 'Show Neogit UI' },
+      { '<leader>d', '<cmd>CodeDiff<cr>', desc = ':CodeDiff' },
+    },
+  },
+
+  {
+    'windwp/nvim-autopairs',
+    event = 'InsertEnter',
+    config = true,
+  },
+
+  {
+    'esmuellert/codediff.nvim',
+    opts = {
+      keymaps = {
+        view = {
+          stage_hunk = false, -- disables CodeDiff <leader>hs
+          unstage_hunk = false, -- disables CodeDiff <leader>hu
+          discard_hunk = false, -- disables CodeDiff <leader>hr / reset hunk
+        },
+      },
+    },
   },
 
   { -- Useful plugin to show you pending keybinds.
@@ -226,23 +307,23 @@ require('lazy').setup({
       --
       -- [[ Configure Telescope ]]
       -- See `:help telescope` and `:help telescope.setup()`
-      local actions = require("telescope.actions")
-      local trouble = require("trouble.sources.telescope")
-      
+      local actions = require 'telescope.actions'
+      local trouble = require 'trouble.sources.telescope'
+
       require('telescope').setup {
         extensions = {
           ['ui-select'] = { require('telescope.themes').get_dropdown() },
         },
-          defaults = {
-            mappings = {
-              i = {
-                ["<C-t>"] = trouble.open,
-              },
-              n = {
-                ["<C-t>"] = trouble.open,
-              },
+        defaults = {
+          mappings = {
+            i = {
+              ['<C-t>'] = trouble.open,
+            },
+            n = {
+              ['<C-t>'] = trouble.open,
             },
           },
+        },
       }
 
       -- Enable Telescope extensions if they are installed
@@ -256,7 +337,8 @@ require('lazy').setup({
       vim.keymap.set('n', '<leader>f', builtin.find_files, { desc = '[S]earch [F]iles' })
       vim.keymap.set('n', '<leader>ss', builtin.builtin, { desc = '[S]earch [S]elect Telescope' })
       vim.keymap.set({ 'n', 'v' }, '<leader>sw', builtin.grep_string, { desc = '[S]earch current [W]ord' })
-      vim.keymap.set('n', '<leader>r', '<cmd>Telescope live_grep<CR>', { desc = '[S]earch by [G]rep' })
+      vim.keymap.set('n', '<leader>rr', '<cmd>Telescope live_grep<CR>', { desc = '[S]earch by [G]rep' })
+      vim.keymap.set('n', '<leader>rg', '<cmd>Telescope grep_string<CR>', { desc = 'Search for word under cursor' })
       vim.keymap.set('n', '<leader>sd', builtin.diagnostics, { desc = '[S]earch [D]iagnostics' })
       vim.keymap.set('n', '<leader>sr', builtin.resume, { desc = '[S]earch [R]esume' })
       vim.keymap.set('n', '<leader>s.', builtin.oldfiles, { desc = '[S]earch Recent Files ("." for repeat)' })
@@ -276,12 +358,17 @@ require('lazy').setup({
         end,
       })
 
-      vim.keymap.set('n', '<leader>/', function()
-        builtin.current_buffer_fuzzy_find(require('telescope.themes').get_dropdown {
-          winblend = 10,
-          previewer = false,
-        })
-      end, { desc = '[/] Fuzzily search in current buffer' })
+      vim.keymap.set(
+        'n',
+        '<leader>/',
+        function()
+          builtin.current_buffer_fuzzy_find(require('telescope.themes').get_dropdown {
+            winblend = 10,
+            previewer = false,
+          })
+        end,
+        { desc = '[/] Fuzzily search in current buffer' }
+      )
 
       vim.keymap.set(
         'n',
@@ -298,18 +385,18 @@ require('lazy').setup({
       vim.keymap.set('n', '<leader>sn', function() builtin.find_files { cwd = vim.fn.stdpath 'config' } end, { desc = '[S]earch [N]eovim files' })
     end,
   },
-  
+
   {
-    "folke/trouble.nvim",
+    'folke/trouble.nvim',
     opts = {
       modes = {
         telescope = {
           title = false,
           groups = {
-            { "dirname", format = "{dirname} {count}" },
-            { "filename", format = "{file_icon} {basename} {count}" },
+            { 'dirname', format = '{dirname} {count}' },
+            { 'filename', format = '{file_icon} {basename} {count}' },
           },
-          sort = { "dirname", "filename", "pos" },
+          sort = { 'dirname', 'filename', 'pos' },
         },
 
         telescope_files = {
@@ -317,29 +404,36 @@ require('lazy').setup({
         },
       },
     },
-    cmd = "Trouble",
+    cmd = 'Trouble',
     keys = {
       {
-        "<leader>xx",
-        "<cmd>Trouble diagnostics toggle<cr>",
-        desc = "Diagnostics (Trouble)",
+        '<leader>xx',
+        '<cmd>Trouble diagnostics toggle<cr>',
+        desc = 'Diagnostics (Trouble)',
       },
       {
-        "<leader>xX",
-        "<cmd>Trouble diagnostics toggle filter.buf=0<cr>",
-        desc = "Buffer Diagnostics (Trouble)",
+        '<leader>xX',
+        '<cmd>Trouble diagnostics toggle filter.buf=0<cr>',
+        desc = 'Buffer Diagnostics (Trouble)',
       },
       {
-        "<leader>xL",
-        "<cmd>Trouble loclist toggle<cr>",
-        desc = "Location List (Trouble)",
+        '<leader>xL',
+        '<cmd>Trouble loclist toggle<cr>',
+        desc = 'Location List (Trouble)',
       },
       {
-        "<leader>xQ",
-        "<cmd>Trouble qflist toggle<cr>",
-        desc = "Quickfix List (Trouble)",
+        '<leader>xQ',
+        '<cmd>Trouble qflist toggle<cr>',
+        desc = 'Quickfix List (Trouble)',
       },
     },
+  },
+  
+  {
+    "norcalli/nvim-colorizer.lua",
+    config = function()
+      require("colorizer").setup()
+    end,
   },
 
   {
@@ -348,16 +442,16 @@ require('lazy').setup({
     ---@type oil.SetupOpts
     opts = {},
     -- Optional dependencies
-    dependencies = { { "nvim-mini/mini.icons", opts = {} } },
+    dependencies = { { 'nvim-mini/mini.icons', opts = {} } },
     -- Lazy loading is not recommended because it is very tricky to make it work correctly in all situations.
     lazy = false,
   },
 
   -- LSP Plugins
   {
-  "pmizio/typescript-tools.nvim",
-  dependencies = { "nvim-lua/plenary.nvim", "neovim/nvim-lspconfig" },
-  opts = {},
+    'pmizio/typescript-tools.nvim',
+    dependencies = { 'nvim-lua/plenary.nvim', 'neovim/nvim-lspconfig' },
+    opts = {},
   },
   {
     -- Main LSP Configuration
@@ -371,7 +465,12 @@ require('lazy').setup({
         ---@module 'mason.settings'
         ---@type MasonSettings
         ---@diagnostic disable-next-line: missing-fields
-        opts = {},
+        opts = {
+          registries = {
+            "github:mason-org/mason-registry",
+            "github:Crashdummyy/mason-registry",
+          },
+        },
       },
       -- Maps LSP server names between nvim-lspconfig and Mason package names.
       'mason-org/mason-lspconfig.nvim',
@@ -379,6 +478,21 @@ require('lazy').setup({
 
       -- Useful status updates for LSP.
       { 'j-hui/fidget.nvim', opts = {} },
+      {
+        'SmiteshP/nvim-navic',
+        opts = {
+          separator = ' > ',
+          highlight = true,
+          lsp = {
+            auto_attach = true,
+            preference = {
+              'angularls',
+              'typescript-tools',
+              'ts_ls'
+            }
+          }
+        },
+      },
     },
     config = function()
       vim.api.nvim_create_autocmd('LspAttach', {
@@ -442,6 +556,7 @@ require('lazy').setup({
         -- pyright = {},
         -- ts_ls = {},
         stylua = {}, -- Used to format Lua code
+        angularls = {},
 
         lua_ls = {
           on_init = function(client)
@@ -533,7 +648,7 @@ require('lazy').setup({
         -- python = { "isort", "black" },
         --
         -- You can use 'stop_after_first' to run the first available formatter from the list
-        javascript = { "prettierd", "prettier", stop_after_first = true },
+        javascript = { 'prettierd', 'prettier', stop_after_first = true },
       },
     },
   },
@@ -597,14 +712,14 @@ require('lazy').setup({
     },
   },
   {
-    "Mofiqul/vscode.nvim",
+    'Mofiqul/vscode.nvim',
     config = function()
-      require('vscode').setup({
-          transparent = true, -- Optional: enable transparent background
-          italic_comments = true,
-      })
-      vim.cmd.colorscheme "vscode"
-    end
+      require('vscode').setup {
+        transparent = true, -- Optional: enable transparent background
+        italic_comments = true,
+      }
+      vim.cmd.colorscheme 'vscode'
+    end,
   },
   -- Highlight todo, notes, etc in comments
   {
@@ -641,12 +756,102 @@ require('lazy').setup({
   },
 
   {
+    'nvim-mini/mini.animate',
+    event = 'VeryLazy',
+    opts = function(_, opts)
+      -- don't use animate when scrolling with the mouse
+      local mouse_scrolled = false
+      local mouse_resized = false
+      for _, scroll in ipairs { 'Up', 'Down' } do
+        local key = '<ScrollWheel' .. scroll .. '>'
+        vim.keymap.set({ '', 'i' }, key, function()
+          mouse_scrolled = true
+          return key
+        end, { expr = true })
+      end
+
+      for _, mouse in ipairs { 'Drag', 'Release' } do
+        local key = '<Left' .. mouse .. '>'
+        vim.keymap.set({ '', 'i' }, key, function()
+          mouse_resized = mouse == 'Drag'
+          return key
+        end, { expr = true })
+      end
+
+      local animate = require 'mini.animate'
+      return vim.tbl_deep_extend('force', opts, {
+        cursor = { enable = false },
+
+        resize = {
+          timing = animate.gen_timing.linear { duration = 50, unit = 'total' },
+          subresize = animate.gen_subresize.equal {
+
+            ---@diagnostic disable-next-line: unused-local
+            predicate = function(sizes_from, sizes_to)
+              if mouse_resized then return false end
+              return true
+            end,
+          },
+        },
+
+        scroll = {
+          timing = animate.gen_timing.linear { duration = 100, unit = 'total' },
+          subscroll = animate.gen_subscroll.equal {
+            predicate = function(total_scroll)
+              if mouse_scrolled then
+                mouse_scrolled = false
+                return false
+              end
+              return total_scroll > 1
+            end,
+          },
+        },
+      })
+    end,
+  },
+  {
     'itchyny/lightline.vim',
+    dependencies = {
+      {
+        'SmiteshP/nvim-navic',
+        opts = {
+          separator = ' > ',
+          highlight = false,
+        },
+      },
+    },
     init = function()
       vim.g.lightline = {
         colorscheme = 'wombat',
+        active = {
+          left = {
+            { 'mode', 'paste' },
+            { 'readonly', 'filename', 'modified' },
+            { 'navic' },
+          },
+        },
+        component_function = {
+          navic = 'LightlineNavic',
+        },
       }
+
+      vim.cmd [[
+      function! LightlineNavic()
+        return luaeval("require'nvim-navic'.is_available() and require'nvim-navic'.get_location() or ''")
+      endfunction
+    ]]
     end,
+  },
+
+  {
+    "seblyng/roslyn.nvim",
+    ft = "cs",
+    dependencies = {
+      "mason-org/mason.nvim"
+    },
+    opts = {
+      broad_search = true,
+    },
   },
 
   { -- Highlight, edit, and navigate code
@@ -657,7 +862,7 @@ require('lazy').setup({
     -- [[ Configure Treesitter ]] See `:help nvim-treesitter-intro`
     config = function()
       -- ensure basic parser are installed
-      local parsers = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc' }
+      local parsers = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'cpp', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc', 'angular', 'typescript', 'c_sharp' }
       require('nvim-treesitter').install(parsers)
 
       ---@param buf integer
@@ -705,7 +910,6 @@ require('lazy').setup({
       })
     end,
   },
-
 }, { ---@diagnostic disable-line: missing-fields
   ui = {
     -- If you are using a Nerd Font: set icons to an empty table which will use the
